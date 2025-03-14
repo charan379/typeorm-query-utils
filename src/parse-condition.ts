@@ -74,7 +74,7 @@ function parseCondition({ fieldAlias: a, condition, conditionFor }: { fieldAlias
     const uniqueId = uuid().replace(/-/g, '_');
 
     // Basic validation: Check if alias is a non-empty string
-    if ((typeof a !== 'string' || a.trim().length === 0) && conditionFor === 'qb') {
+    if ((a.trim().length === 0) && conditionFor === 'qb') {
         throw new Error('ALIAS_MUST_BE_A_NON_EMPTY_STRING');
     }
 
@@ -98,7 +98,7 @@ function parseCondition({ fieldAlias: a, condition, conditionFor }: { fieldAlias
         const [conditionOperator, conditionValue] = Object.entries(condition)[0];
 
         // Check if the condition operator is a valid string
-        if (typeof conditionOperator !== 'string') {
+        if (typeof conditionOperator != 'string') {
             throw new Error('CONDITION_OPERATOR_MUST_BE_A_STRING');
         }
 
