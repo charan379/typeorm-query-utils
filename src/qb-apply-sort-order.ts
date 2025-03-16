@@ -1,6 +1,12 @@
 import { ObjectLiteral, SelectQueryBuilder } from 'typeorm';
 
 /**
+ * Type representing possible sort order values.
+ */
+export type SortOrder = 'ascend' | 'descend' | 'asc' | 'desc' | 'ascending' | 'descending' | 1 | -1;
+
+
+/**
  * Applies sorting to a TypeORM Query Builder.
  *
  * @param {SelectQueryBuilder<T>} queryBuilder - The TypeORM Query Builder instance.
@@ -9,7 +15,7 @@ import { ObjectLiteral, SelectQueryBuilder } from 'typeorm';
  * @returns {SelectQueryBuilder<T>} - The updated Query Builder with applied sorting.
  */
 function applySortOrderQB<T extends ObjectLiteral>(
-    queryBuilder: SelectQueryBuilder<T>, 
+    queryBuilder: SelectQueryBuilder<T>,
     sort: Record<string, SortOrder>
 ): SelectQueryBuilder<T> {
     Object.entries(sort).forEach(([key, value]) => {

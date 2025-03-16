@@ -11,7 +11,6 @@ import applyWhereConditionQB from './qb-apply-where-condition';
 function applyFiltersQB<T extends ObjectLiteral>(queryBuilder: SelectQueryBuilder<T>, alias: string, filter: any): void {
     Object.keys(filter).forEach((field) => {
         const value = filter[field];
-
         // Apply standard conditions
         applyWhereConditionQB(queryBuilder, alias, field, value, 'andWhere');
     });

@@ -1,18 +1,51 @@
-import { expect } from 'chai';
+import { expect, should } from 'chai';
 import parseCondition from '../src/parse-condition';
 import { In, Not, MoreThanOrEqual, LessThanOrEqual, MoreThan, LessThan, Between, Like, ILike, Equal, IsNull, Raw } from 'typeorm';
 
 describe('parseCondition', () => {
-    it('should parse a equalTo condition', () => {
-        const result = parseCondition({
-            conditionFor: 'qb',
-            fieldAlias: 'user.name',
-            condition: { $equalTo: 'John' }
+    describe('should parse $equalTo operator condition', () => {
+        it('should parse $equalTo operator correctly for qb', () => {
+            const result = parseCondition({
+                conditionFor: 'qb',
+                fieldAlias: 'user.name',
+                condition: { $equalTo: 'John' }
+            });
+
+            // Use a regular expression to match the query string
+            expect(result.query).to.match(/^user\.name = :[a-z0-9_]+_equalTo_user\.name$/);
+            expect(result.parameters).to.have.property(Object.keys(result.parameters)[0], 'John');
+        })
+
+        it('should parse $equalTo operator correctly for find', () => {
+            const result = parseCondition({ conditionFor: 'find', fieldAlias: 'field', condition: { $equalTo: 3 } });
+            expect(result).to.deep.equal(Equal(3));
         });
 
-        // Use a regular expression to match the query string
-        expect(result.query).to.match(/^user\.name = :[a-z0-9_]+_equalTo_user\.name$/);
-        expect(result.parameters).to.have.property(Object.keys(result.parameters)[0], 'John');
+        it("should throw an error when $equalTo operator is used with qb and the value is invalid", () => {
+            expect(() => parseCondition({ conditionFor: 'qb', fieldAlias: 'field', condition: { $equalTo: {} } })).to.throw("$EQUAL_TO_OPERATOR_MUST_HAVE_A_STRING_NUMBER_BOOLEAN_OR_DATE_VALUE");
+        })
+    });
+
+    describe('should parse $notEqualTo operator condition', () => {
+        it('should parse $notEqualTo operator correctly for qb', () => {
+            const result = parseCondition({
+                conditionFor: 'qb',
+                fieldAlias: 'user.name',
+                condition: { $notEqualTo: 'John' }
+            });
+            // Use a regular expression to match the query string
+            expect(result.query).to.match(/^user\.name != :[a-z0-9_]+_notEqualTo_user\.name$/);
+            expect(result.parameters).to.have.property(Object.keys(result.parameters)[0], 'John');
+        })
+
+        it('should parse $notEqualTo operator correctly for find', () => {
+            const result = parseCondition({ conditionFor: 'find', fieldAlias: 'field', condition: { $notEqualTo: 3 } });
+            expect(result).to.deep.equal(Not(Equal(3)));
+        });
+
+        it("should throw an error when $notEqualTo operator is used with qb and the value is invalid", () => {
+            expect(() => parseCondition({ conditionFor: 'qb', fieldAlias: 'field', condition: { $notEqualTo: {} } })).to.throw("$NOT_EQUAL_TO_OPERATOR_MUST_HAVE_A_STRING_NUMBER_BOOLEAN_OR_DATE_VALUE");
+        })
     });
 
     describe('should parse $in operator correctly', () => {
@@ -46,7 +79,7 @@ describe('parseCondition', () => {
             expect(result).to.deep.equal(Not(In([1, 2, 3])));
         });
 
-        it("should throw an error when $in operator is used with qb and the value is not an array", () => {
+        it("should throw an error when $notIn operator is used with qb and the value is not an array", () => {
             expect(() => parseCondition({ conditionFor: 'qb', fieldAlias: 'field', condition: { $notIn: 'not an array' } })).to.throw("$NOTIN_OPERATOR_MUST_HAVE_AN_ARRAY_OF_STRINGS_OR_NUMBERS");
         })
     });
@@ -225,6 +258,18 @@ describe('parseCondition', () => {
         });
     });
 
+    describe('should parse $isNotNull operator correctly', () => {
+        it('should parse $isNotNull operator correctly for qb', () => {
+            const result = parseCondition({ conditionFor: 'qb', fieldAlias: 'field', condition: '$isNotNull' });
+            expect(result.query).to.equal('field IS NOT NULL');
+        });
+
+        it('should parse $isNotNull operator correctly for find', () => {
+            const result = parseCondition({ conditionFor: 'find', fieldAlias: 'field', condition: '$isNotNull' });
+            expect(result).to.deep.equal(Not(IsNull()));
+        });
+    });
+
     describe('should parse $iContains operator correctly', () => {
         it('should parse $iContains operator correctly for qb', () => {
             const result = parseCondition({ conditionFor: 'qb', fieldAlias: 'field', condition: { $iContains: 'test' } });
@@ -334,10 +379,11 @@ describe('parseCondition', () => {
             expect(result.parameters).to.have.property(Object.keys(result.parameters)[0], 'test');
         });
 
-        // it('should parse $regex operator correctly for find', () => {
-        //     const result = parseCondition({ conditionFor: 'find', fieldAlias: 'field', condition: { $regex: 'test' } });
-        //     expect(result).to.deep.equal(Raw(alias => `${alias} ~ :${Object.keys(result.parameters)[0]}`, { [Object.keys(result.parameters)[0]]: 'test' }));
-        // });
+        it('should parse $regex operator correctly for find', () => {
+            const result = parseCondition({ conditionFor: 'find', fieldAlias: 'field', condition: { $regex: 'test' } });
+            expect(result?.getSql?.("field")).to.match(/^field ~ :[a-z0-9_]+_regex_field$/);
+            expect(result.objectLiteralParameters).to.deep.equal({ [Object.keys(result.objectLiteralParameters as object)[0]]: "test" });
+        });
 
         it("should throw an error for $regex operator with invalid value", () => {
             expect(() => parseCondition({ conditionFor: 'qb', fieldAlias: 'field', condition: { $regex: {} } })).throw("$REGEX_OPERATOR_MUST_HAVE_A_STRING_VALUE");
@@ -351,10 +397,11 @@ describe('parseCondition', () => {
             expect(result.parameters).to.have.property(Object.keys(result.parameters)[0], 'test');
         });
 
-        // it('should parse $notRegex operator correctly for find', () => {
-        //     const result = parseCondition({ conditionFor: 'find', fieldAlias: 'field', condition: { $notRegex: 'test' } });
-        //     expect(result).to.deep.equal(Raw(alias => `${alias} !~ :${Object.keys(result.parameters)[0]}`, { [Object.keys(result.parameters)[0]]: 'test' }));
-        // });
+        it('should parse $notRegex operator correctly for find', () => {
+            const result = parseCondition({ conditionFor: 'find', fieldAlias: 'field', condition: { $notRegex: 'test' } });
+            expect(result?.getSql?.("field")).to.match(/^field !~ :[a-z0-9_]+_notRegex_field$/);
+            expect(result.objectLiteralParameters).to.deep.equal({ [Object.keys(result.objectLiteralParameters as object)[0]]: "test" });
+        });
 
         it("should throw an error for $notRegex operator with invalid value", () => {
             expect(() => parseCondition({ conditionFor: 'qb', fieldAlias: 'field', condition: { $notRegex: {} } })).throw("$NOT_REGEX_OPERATOR_MUST_HAVE_A_STRING_VALUE");
@@ -368,10 +415,11 @@ describe('parseCondition', () => {
             expect(result.parameters).to.have.property(Object.keys(result.parameters)[0], 'test');
         });
 
-        // it('should parse $regexi operator correctly for find', () => {
-        //     const result = parseCondition({ conditionFor: 'find', fieldAlias: 'field', condition: { $regexi: 'test' } });
-        //     expect(result).to.deep.equal(Raw(alias => `${alias} ~* :${Object.keys(result.parameters)[0]}`, { [Object.keys(result.parameters)[0]]: 'test' }));
-        // });
+        it('should parse $regexi operator correctly for find', () => {
+            const result = parseCondition({ conditionFor: 'find', fieldAlias: 'field', condition: { $regexi: 'test' } });
+            expect(result?.getSql?.("field")).to.match(/^field ~\* :[a-z0-9_]+_regexi_field$/);
+            expect(result.objectLiteralParameters).to.deep.equal({ [Object.keys(result.objectLiteralParameters as object)[0]]: "test" });
+        });
 
         it("should throw an error for $regexi operator with invalid value", () => {
             expect(() => parseCondition({ conditionFor: 'qb', fieldAlias: 'field', condition: { $regexi: {} } })).throw("$REGEXI_OPERATOR_MUST_HAVE_A_STRING_VALUE");
@@ -385,10 +433,11 @@ describe('parseCondition', () => {
             expect(result.parameters).to.have.property(Object.keys(result.parameters)[0], 'test');
         });
 
-        // it('should parse $notRegexi operator correctly for find', () => {
-        //     const result = parseCondition({ conditionFor: 'find', fieldAlias: 'field', condition: { $notRegexi: 'test' } });
-        //     expect(result).to.deep.equal(Raw(alias => `${alias} !~* :${Object.keys(result.parameters)[0]}`, { [Object.keys(result.parameters)[0]]: 'test' }));
-        // });
+        it('should parse $notRegexi operator correctly for find', () => {
+            const result = parseCondition({ conditionFor: 'find', fieldAlias: 'field', condition: { $notRegexi: 'test' } });
+            expect(result?.getSql?.("field")).to.match(/^field !~\* :[a-z0-9_]+_notRegexi_field$/);
+            expect(result.objectLiteralParameters).to.deep.equal({ [Object.keys(result.objectLiteralParameters as object)[0]]: "test" });
+        });
 
         it("should throw an error for $notRegexi operator with invalid value", () => {
             expect(() => parseCondition({ conditionFor: 'qb', fieldAlias: 'field', condition: { $notRegexi: {} } })).throw("$NOT_REGEXI_OPERATOR_MUST_HAVE_A_STRING_VALUE");
@@ -402,10 +451,11 @@ describe('parseCondition', () => {
             expect(result.parameters).to.have.property(Object.keys(result.parameters)[0], JSON.stringify({ key: 'value' }));
         });
 
-        // it('should parse $jsonContains operator correctly for find', () => {
-        //     const result = parseCondition({ conditionFor: 'find', fieldAlias: 'field', condition: { $jsonContains: { key: 'value' } } });
-        //     expect(result).to.deep.equal(Raw(alias => `${alias} @> :${Object.keys(result.parameters)[0]}`, { [Object.keys(result.parameters)[0]]: JSON.stringify({ key: 'value' }) }));
-        // });
+        it('should parse $jsonContains operator correctly for find', () => {
+            const result = parseCondition({ conditionFor: 'find', fieldAlias: 'field', condition: { $jsonContains: 'test' } });
+            expect(result?.getSql?.("field")).to.match(/^field @> :[a-z0-9_]+_jsonContains_field$/);
+            expect(Object.values(result.objectLiteralParameters as object)[0]).to.match(/test/);
+        });
     });
 
     describe('should parse $jsonContained operator correctly', () => {
@@ -415,10 +465,11 @@ describe('parseCondition', () => {
             expect(result.parameters).to.have.property(Object.keys(result.parameters)[0], JSON.stringify({ key: 'value' }));
         });
 
-        // it('should parse $jsonContained operator correctly for find', () => {
-        //     const result = parseCondition({ conditionFor: 'find', fieldAlias: 'field', condition: { $jsonContained: { key: 'value' } } });
-        //     expect(result).to.deep.equal(Raw(alias => `${alias} <@ :${Object.keys(result.parameters)[0]}`, { [Object.keys(result.parameters)[0]]: JSON.stringify({ key: 'value' }) }));
-        // });
+        it('should parse $jsonContained operator correctly for find', () => {
+            const result = parseCondition({ conditionFor: 'find', fieldAlias: 'field', condition: { $jsonContained: 'test' } });
+            expect(result?.getSql?.("field")).to.match(/^field <@ :[a-z0-9_]+_jsonContained_field$/);
+            expect(Object.values(result.objectLiteralParameters as object)[0]).to.match(/test/);
+        });
     });
 
     describe('should parse $jsonEquals operator correctly', () => {
@@ -428,10 +479,11 @@ describe('parseCondition', () => {
             expect(result.parameters).to.have.property(Object.keys(result.parameters)[0], JSON.stringify({ key: 'value' }));
         });
 
-        // it('should parse $jsonEquals operator correctly for find', () => {
-        //     const result = parseCondition({ conditionFor: 'find', fieldAlias: 'field', condition: { $jsonEquals: { key: 'value' } } });
-        //     expect(result).to.deep.equal(Raw(alias => `${alias} = :${Object.keys(result.parameters)[0]}`, { [Object.keys(result.parameters)[0]]: JSON.stringify({ key: 'value' }) }));
-        // });
+        it('should parse $jsonEquals operator correctly for find', () => {
+            const result = parseCondition({ conditionFor: 'find', fieldAlias: 'field', condition: { $jsonEquals: 'test' } });
+            expect(result?.getSql?.("field")).to.match(/^field = :[a-z0-9_]+_jsonEquals_field$/);
+            expect(Object.values(result.objectLiteralParameters as object)[0]).to.match(/test/);
+        });
     });
 
     describe('should parse $jsonHasKey operator correctly', () => {
@@ -441,10 +493,47 @@ describe('parseCondition', () => {
             expect(result.parameters).to.have.property(Object.keys(result.parameters)[0], 'key');
         });
 
-        // it('should parse $jsonHasKey operator correctly for find', () => {
-        //     const result = parseCondition({ conditionFor: 'find', fieldAlias: 'field', condition: { $jsonHasKey: 'key' } });
-        //     expect(result).to.deep.equal(Raw(alias => `${alias} ? :${Object.keys(result.parameters)[0]}`, { [Object.keys(result.parameters)[0]]: 'key' }));
-        // });
+        it('should parse $jsonHasKey operator correctly for find', () => {
+            const result = parseCondition({ conditionFor: 'find', fieldAlias: 'field', condition: { $jsonHasKey: 'key' } });
+            expect(result?.getSql?.("field")).to.match(/^field \? :[a-z0-9_]+_jsonHasKey_field_key$/);
+            expect(Object.values(result.objectLiteralParameters as object)[0]).to.match(/key/);
+        });
+    });
+
+    describe("should parse the direct array of conditions correctly", () => {
+        it('should parse the direct array of conditions correctly for qb', () => {
+            const result = parseCondition({ conditionFor: 'qb', fieldAlias: 'field', condition: [1, 2, 3] });
+            expect(result.query).to.match(/^field IN \(:\.\.\.[a-z0-9_]+_in_field\)$/);
+            expect(result.parameters).to.have.property(Object.keys(result.parameters)[0]).that.is.an("array");
+            expect(result.parameters[Object.keys(result.parameters)[0]]).to.deep.equal([1, 2, 3]);
+        });
+
+        it('should parse the direct array of conditions correctly for find', () => {
+            const result = parseCondition({ conditionFor: 'find', fieldAlias: 'field', condition: [1, 2, 3] });
+            expect(result).to.deep.equal(In([1, 2, 3]));
+        });
+    });
+
+    describe("should parse the direct condition correctly with =", () => {
+        it('should parse the direct condition correctly with = for qb', () => {
+            const result = parseCondition({
+                conditionFor: 'qb',
+                fieldAlias: 'user.name',
+                condition: 'John'// string
+            });
+            // Use a regular expression to match the query string
+            expect(result.query).to.match(/^user\.name = :[a-z0-9_]+_eq_user\.name$/);
+            expect(result.parameters).to.have.property(Object.keys(result.parameters)[0], 'John');
+        })
+
+        it('should parse the direct condition correctly with = for find', () => {
+            const result = parseCondition({ conditionFor: 'find', fieldAlias: 'field', condition: 3 });
+            expect(result).to.deep.equal(Equal(3));
+        });
+
+        it("should throw an error for direct condition with invalid value", () => {
+            expect(() => parseCondition({ conditionFor: 'qb', fieldAlias: 'field', condition: () => { } })).throw("$INVALID_CONDITION");
+        })
     });
 
     it('should throw error for unsupported conditionFor value', () => {

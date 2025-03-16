@@ -30,7 +30,6 @@ const applyWhereConditionsQB = (
     for (const field in conditions) {
         if (Object.prototype.hasOwnProperty.call(conditions, field)) {
             const condition = conditions[field];
-
             try {
                 if (field === '$and' || field === '$or') {
                     qb[whereMethod](

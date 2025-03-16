@@ -2,6 +2,10 @@
 
 A TypeORM utility library that simplifies query building with advanced filtering, sorting, and condition parsing.
 
+[![npm version](https://badge.fury.io/js/%40charan379%2Ftypeorm-query-utils.svg)](https://badge.fury.io/js/%40charan379%2Ftypeorm-query-utils)
+
+![Coverage](https://img.shields.io/badge/coverage-98.91%25-brightgreen)
+
 ## Installation
 
 ```sh

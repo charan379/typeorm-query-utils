@@ -1,6 +1,12 @@
 import { Between, Equal, FindOperator, ILike, In, IsNull, LessThan, LessThanOrEqual, Like, MoreThan, MoreThanOrEqual, Not, Raw } from 'typeorm';
 import { v4 as uuid } from 'uuid'
 
+// Define the type for FindOperatorQB
+export interface FindOperatorQB {
+    query: string;
+    parameters?: any;
+}
+
 // Centralized operator map
 const operatorMap: Record<string, string> = {
     $in: 'IN',
@@ -98,9 +104,9 @@ function parseCondition({ fieldAlias: a, condition, conditionFor }: { fieldAlias
         const [conditionOperator, conditionValue] = Object.entries(condition)[0];
 
         // Check if the condition operator is a valid string
-        if (typeof conditionOperator != 'string') {
-            throw new Error('CONDITION_OPERATOR_MUST_BE_A_STRING');
-        }
+        // if (typeof conditionOperator != 'string') {
+        //     throw new Error('CONDITION_OPERATOR_MUST_BE_A_STRING');
+        // }
 
         // Check if the condition value is valid for the given operator
         if (conditionValue === undefined || conditionValue === null) {
@@ -138,7 +144,7 @@ function parseCondition({ fieldAlias: a, condition, conditionFor }: { fieldAlias
                         // Return a Raw object for the 'find' condition
                         Not(In(conditionValue))
                 } else {
-                    throw new Error("$IN_OPERATOR_MUST_HAVE_AN_ARRAY_OF_STRINGS_OR_NUMBERS");
+                    throw new Error("$NOTIN_OPERATOR_MUST_HAVE_AN_ARRAY_OF_STRINGS_OR_NUMBERS");
                 }
             case '$gte':
                 // Check if the condition value is a number, string, or Date
@@ -428,7 +434,7 @@ function parseCondition({ fieldAlias: a, condition, conditionFor }: { fieldAlias
     // If the condition is not a valid condition, then throw an error
     else {
         // throw new Error(`Invalid condition, must be an object, array, string, number, boolean, or Date`);
-        throw new Error("INVALID_CONDITION");
+        throw new Error("$INVALID_CONDITION");
     }
 }
 export default parseCondition;

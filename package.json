@@ -1,12 +1,13 @@
 {
   "name": "@charan379/typeorm-query-utils",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "A TypeORM utility library that simplifies query building with advanced filtering, sorting, and condition parsing.",
   "main": "dist/index.js",
   "types": "dist/@types/index.d.ts",
+  "files": ["dist"],
   "scripts": {
     "build": "tsc",
-    "test": "nyc --reporter=text --reporter=lcov mocha"
+    "test": "nyc --reporter=text --reporter=html mocha"
   },
   "keywords": [
     "typeorm",
@@ -24,21 +25,25 @@
     "sqlite"
   ],
   "author": "charan379",
-  "license": "ISC",
+  "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/yourusername/my-library.git"
+    "url": "git+https://github.com/charan379/typeorm-query-utils.git"
   },
   "bugs": {
-    "url": "https://github.com/yourusername/my-library/issues"
+    "url": "https://github.com/charan379/typeorm-query-utils/issues"
   },
   "devDependencies": {
     "@types/chai": "^5.2.0",
     "@types/mocha": "^10.0.10",
     "@types/node": "^22.13.10",
+    "@types/proxyquire": "^1.3.31",
+    "@types/sinon": "^17.0.4",
     "chai": "^5.2.0",
     "mocha": "^11.1.0",
     "nyc": "^17.1.0",
+    "proxyquire": "^2.1.3",
+    "sinon": "^19.0.2",
     "ts-node": "^10.9.2",
     "tsx": "^4.19.3",
     "typescript": "^5.8.2"
