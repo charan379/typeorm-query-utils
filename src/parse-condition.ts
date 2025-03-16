@@ -1,12 +1,6 @@
 import { Between, Equal, FindOperator, ILike, In, IsNull, LessThan, LessThanOrEqual, Like, MoreThan, MoreThanOrEqual, Not, Raw } from 'typeorm';
 import { v4 as uuid } from 'uuid'
-
-// Define the type for FindOperatorQB
-export interface FindOperatorQB {
-    query: string;
-    parameters?: any;
-}
-
+import { FindOperatorQB } from '.';
 // Centralized operator map
 const operatorMap: Record<string, string> = {
     $in: 'IN',

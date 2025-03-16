@@ -1,10 +1,12 @@
 {
   "name": "@charan379/typeorm-query-utils",
-  "version": "0.0.2",
+  "version": "0.0.4",
   "description": "A TypeORM utility library that simplifies query building with advanced filtering, sorting, and condition parsing.",
   "main": "dist/index.js",
-  "types": "dist/@types/index.d.ts",
-  "files": ["dist"],
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc",
     "test": "nyc --reporter=text --reporter=html mocha"
